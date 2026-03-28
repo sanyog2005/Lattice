@@ -1,0 +1,41 @@
+-- db-init/init.sql
+DROP TABLE IF EXISTS Event_Attendance;
+DROP TABLE IF EXISTS Bookings;
+DROP TABLE IF EXISTS Events;
+DROP TABLE IF EXISTS Users;
+
+CREATE TABLE Users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    date DATETIME NOT NULL,
+    total_capacity INT NOT NULL,
+    remaining_tickets INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Bookings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    booking_code VARCHAR(50) NOT NULL UNIQUE, 
+    booking_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE Event_Attendance (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, 
+    event_id INT NOT NULL,
+    entry_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
+    FOREIGN KEY (event_id) REFERENCES Events(id) ON DELETE CASCADE
+);

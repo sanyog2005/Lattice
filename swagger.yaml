@@ -1,0 +1,272 @@
+openapi: 3.0.0
+info:
+  title: Mini Event Management System API
+  description: API for browsing events, booking tickets, and verifying attendance.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+paths:
+  /events:
+    get:
+      summary: List all upcoming events
+      description: Retrieves a list of all events with a date in the future.
+      responses:
+        '200':
+          description: A list of upcoming events.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new event
+      description: Creates a new event with a title, date, and capacity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      responses:
+        '201':
+          description: Event created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Event created successfully
+                  event_id:
+                    type: integer
+                    example: 1
+        '400':
+          description: Invalid input data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings:
+    post:
+      summary: Book a ticket
+      description: Books a ticket for a user. Implements a database transaction to prevent race conditions and returns a unique booking code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingInput'
+      responses:
+        '201':
+          description: Booking successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Booking successful
+                  booking_id:
+                    type: integer
+                    example: 12
+                  booking_code:
+                    type: string
+                    example: TKT-A1B2C3D4
+        '400':
+          description: Tickets are sold out or missing input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error during booking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}/bookings:
+    get:
+      summary: Retrieve a user's bookings
+      description: Gets all event bookings made by a specific user ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The user ID
+      responses:
+        '200':
+          description: A list of the user's bookings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserBooking'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /events/{id}/attendance:
+    post:
+      summary: Verify event attendance
+      description: Takes a booking code and verifies if it is valid for the specified event ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The event ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - booking_code
+              properties:
+                booking_code:
+                  type: string
+                  example: TKT-A1B2C3D4
+      responses:
+        '200':
+          description: Attendance verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Attendance verified successfully
+                  tickets_booked:
+                    type: integer
+                    example: 1
+                  user_id:
+                    type: integer
+                    example: 1
+        '400':
+          description: Missing booking code.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Invalid booking code for this event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        total_capacity:
+          type: integer
+        remaining_tickets:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    EventInput:
+      type: object
+      required:
+        - title
+        - date
+        - total_capacity
+      properties:
+        title:
+          type: string
+          example: Node.js Masterclass
+        description:
+          type: string
+          example: Backend development workshop
+        date:
+          type: string
+          format: date-time
+          example: 2026-05-15T10:00:00Z
+        total_capacity:
+          type: integer
+          example: 100
+    BookingInput:
+      type: object
+      required:
+        - user_id
+        - event_id
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        event_id:
+          type: integer
+          example: 1
+    UserBooking:
+      type: object
+      properties:
+        booking_id:
+          type: integer
+        booking_code:
+          type: string
+        booking_date:
+          type: string
+          format: date-time
+        event_id:
+          type: integer
+        event_title:
+          type: string
+        event_date:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: An error message describing what went wrong.
